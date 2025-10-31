@@ -4,13 +4,13 @@ import { Suspense } from "react";
 
 export default function Navbar() {
   return (
-    <nav className="sticky top-0 z-10 w-full max-w-[1440px] bg-[#F9F9F9] flex justify-between items-center py-4 px-[124px] custom_drop_shadow ">
-      <div className=" w-[100px] h-[55px] text-center">
+    <nav className="sticky top-0 z-10 w-full bg-[#F9F9F9] flex justify-between items-center py-4 px-4 sm:px-8 lg:px-16 xl:px-[124px] custom_drop_shadow">
+      <div className="w-[80px] h-[44px] sm:w-[100px] sm:h-[55px] text-center flex-shrink-0">
         <Image src="/newLogo.png" alt="Logo" width={100} height={55} />
       </div>
       <Suspense
         fallback={
-          <div className="w-full h-full flex items-center justify-center py-20 bg-[#F9F9F9]">
+          <div className="flex-grow flex items-center justify-center bg-[#F9F9F9] h-[55px]">
             <p className="text-lg text-gray-500">Loading...</p>
           </div>
         }

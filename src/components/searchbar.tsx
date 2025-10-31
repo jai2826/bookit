@@ -6,10 +6,9 @@ import { Input } from "@/components/ui/input";
 
 const SearchBar = () => {
   const router = useRouter();
-  const pathname = usePathname(); // Get the current path (e.g., /experiences)
-  const searchParams = useSearchParams(); // Get the current query params
+  const pathname = usePathname();
+  const searchParams = useSearchParams();
 
-  // Initialize state from current URL params if 'search' exists
   const initialQuery = searchParams.get('search') || "";
   const [searchTerm, setSearchTerm] = useState(initialQuery);
 
@@ -17,33 +16,28 @@ const SearchBar = () => {
     setSearchTerm(event.target.value);
   };
 
-  // Handler for button click or form submission
   const handleSearch = (event: React.FormEvent) => {
     event.preventDefault(); 
     
     const term = searchTerm.trim();
     
-    // 1. Create a new URLSearchParams instance based on the current params
-    // This preserves any other existing query params (like pagination, filtering, etc.)
     const params = new URLSearchParams(searchParams.toString());
 
     if (term) {
-      // 2. Set or update the 'search' parameter with the new search term
       params.set('search', term);
     } else {
-      // 3. If the search term is empty, remove the 'search' parameter completely
       params.delete('search');
     }
 
-    // 4. Construct the new URL and update the route without reloading
-    // Example: /experiences?page=2&search=newterm
     router.push(`${pathname}?${params.toString()}`);
   };
 
   return (
-    <form onSubmit={handleSearch} className="flex gap-x-4">
+    // RESPONSIVE: Full width on mobile, maintains original desktop width on medium/large screens.
+    <form onSubmit={handleSearch} className="flex gap-x-4 w-full md:w-[450px] lg:w-fit">
       <Input
-        className="bg-[#EDEDED] w-[340px] h-[42px] font-normal text-[14px] leading-[18px] rounded-[4px]"
+        // RESPONSIVE: w-full on mobile to fill space, original fixed w-[340px] restored on desktop (lg:w-[340px]).
+        className="bg-[#EDEDED] w-full lg:w-[340px] h-[42px] font-normal text-[14px] leading-[18px] rounded-[4px] flex-shrink"
         type="text"
         placeholder="Search experiences"
         value={searchTerm}
@@ -52,7 +46,7 @@ const SearchBar = () => {
       
       <button 
         type="submit"
-        className="bg-[#FFD643] gap-[10px] py-3 px-5 text-center rounded-[8px] font-medium text-[14px] leading-[18px]"
+        className="bg-[#FFD643] gap-[10px] py-3 px-5 text-center rounded-[8px] font-medium text-[14px] leading-[18px] cursor-pointer flex-shrink-0"
       >
         Search
       </button>

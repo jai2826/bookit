@@ -7,12 +7,12 @@ import {
   FormLabel,
   FormMessage,
 } from "@/components/ui/form";
-import { ArrowLeft, Minus, Plus } from "lucide-react";
+import { ArrowLeft } from "lucide-react";
 import { useParams, useRouter, useSearchParams } from "next/navigation";
 
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
-import { set, z } from "zod";
+import { z } from "zod";
 import { checkoutSchema } from "@/app/experience/schema";
 import { Input } from "@/components/ui/input";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -21,13 +21,11 @@ import { Experience, Slot } from "@prisma/client";
 import { cn } from "@/lib/utils";
 import { Spinner } from "@/components/ui/spinner";
 import { toast } from "sonner";
-import { ta } from "date-fns/locale";
 
 interface ValidPromoCode {
   id: string;
   code: string;
   discountType: "PERCENTAGE" | "FINAL_AMOUNT";
-  // Note: We use string here because it's safely serialized from the Decimal type
   discountValue: string;
   validUntil: string | null;
 }
@@ -42,8 +40,6 @@ interface BookingPayload {
   calculatedFinalPrice: number;
 }
 
-// In a real application, you'd fetch this data from your backend API.
-// Here, we're simulating it with a local lookup.
 const CheckoutPage = () => {
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -66,23 +62,31 @@ const CheckoutPage = () => {
   const params = useParams();
   const experienceId = params.experienceId;
 
-  // --- State to hold the extracted, safe values ---
+  const form = useForm<z.output<typeof checkoutSchema>>({
+    resolver: zodResolver(checkoutSchema),
+    defaultValues: {
+      fullname: "",
+      email: "",
+      promocode: "",
+      acceptTerms: false,
+      slotId: slotData.slotId || "",
+      quantity: slotData.quantity || 1,
+      experienceId: experienceId?.toString() || "",
+    },
+  });
 
   useEffect(() => {
-    // You can now immediately fetch the slot details here!
     async function fetchSlot(id: string) {
       try {
         const API_URL = process.env.NEXT_PUBLIC_APP_URL + `/api/slots/${id}`;
         const response = await fetch(API_URL);
 
         if (!response.ok) {
-          // Handle HTTP errors (404, 500, etc.)
           const errorData = await response.json();
           throw new Error(errorData.error || "Failed to fetch experience");
         }
 
         const data = await response.json();
-        // console.log(data);
         setSlot(data);
       } catch (e: any) {
         setError(e.message);
@@ -97,13 +101,11 @@ const CheckoutPage = () => {
         const response = await fetch(API_URL);
 
         if (!response.ok) {
-          // Handle HTTP errors (404, 500, etc.)
           const errorData = await response.json();
           throw new Error(errorData.error || "Failed to fetch experience");
         }
 
         const data = await response.json();
-        // console.log(data);
         setExperience(data);
       } catch (e: any) {
         setError(e.message);
@@ -113,38 +115,33 @@ const CheckoutPage = () => {
     }
 
     const rawSlotId = searchParams.get("slotId");
-    const rawQuantity = searchParams.get("slotQuantity"); // 💡 You were using "slotQuantity", check your previous page!
+    const rawQuantity = searchParams.get("slotQuantity");
 
-    // 1. Calculate the safe, parsed values
     const safeQuantity = rawQuantity ? parseInt(rawQuantity) : 1;
     const safeSlotId = rawSlotId || "";
     const safeExperienceId = experienceId?.toString() || "";
 
-    // 2. Set the local state (for rendering details)
     setSlotData({
       slotId: safeSlotId,
       quantity: safeQuantity,
     });
 
-    // 🔥 FIX: Use form.reset() to update React Hook Form's internal state
     form.reset({
-      fullname: form.getValues("fullname"), // Keep existing values
+      fullname: form.getValues("fullname"),
       email: form.getValues("email"),
       promocode: form.getValues("promocode"),
       acceptTerms: form.getValues("acceptTerms"),
 
-      // Inject the newly retrieved, safe values
       slotId: safeSlotId,
       quantity: safeQuantity,
       experienceId: safeExperienceId,
     });
 
-    // 3. Fetch data (runs after form has the ID)
     if (rawSlotId) {
       fetchSlot(rawSlotId);
     }
     fetchExperience(safeExperienceId);
-  }, [searchParams]);
+  }, [searchParams, experienceId]);
 
   async function checkPromoCode(promoCode: string): Promise<{
     isValid: boolean;
@@ -161,25 +158,20 @@ const CheckoutPage = () => {
       };
     }
 
-    // 1. Construct the API URL
-    const endpoint = `/api/promocode/${promoCode}/validate`; // Adjust path as needed
+    const endpoint = `/api/promocode/${promoCode}/validate`;
 
     try {
-      // 2. Fetch the data from your Next.js API route
       const response = await fetch(endpoint);
       const result = await response.json();
 
-      // The API should return the validation status explicitly
       if (result.isValid === true) {
-        // Success case
         toast.success("Promo code applied successfully!");
         return {
           isValid: true,
           message: result.message,
-          data: result.data, // This contains the ValidPromoCode object
+          data: result.data,
         };
       } else {
-        // Failure cases handled by the API (404, 403, 500 errors will land here)
         toast.error(result.message || "Invalid promo code.");
         return {
           isValid: false,
@@ -188,7 +180,6 @@ const CheckoutPage = () => {
         };
       }
     } catch (error) {
-      // Catch network errors or JSON parsing issues
       console.error("Network or API error during promo code check:", error);
       toast.error("Unable to validate promo code due to a network error.");
       return {
@@ -198,18 +189,6 @@ const CheckoutPage = () => {
       };
     }
   }
-  const form = useForm<z.output<typeof checkoutSchema>>({
-    resolver: zodResolver(checkoutSchema),
-    defaultValues: {
-      fullname: "",
-      email: "",
-      promocode: "",
-      acceptTerms: false,
-      slotId: slotData.slotId || "",
-      quantity: slotData.quantity || 1,
-      experienceId: experienceId?.toString() || "",
-    },
-  });
 
   const handlePromocodeSubmit = async () => {
     setApplyDisabled(true);
@@ -227,62 +206,47 @@ const CheckoutPage = () => {
       setCheckedPromoData(null);
     }
   };
-  // Inside your CheckoutPage component...
-
-  // Define the shape of the data the API expects (from your Zod schema)
-
-  // ... other functions and state (form, slotData, checkedPromoData, etc.)
 
   const formSubmit = async (values: z.output<typeof checkoutSchema>) => {
-    // console.log(slotData);
-    // 🛑 IMPORTANT: Final validation check before submitting
     if (!slotData.slotId || !experience || !slot) {
-      // This should not happen if your loading state is correct, but safe to check.
       console.error("Missing essential booking data (Slot or Experience).");
       toast.error("Missing essential booking data. Please try again.");
       return;
     }
 
-    // 1. Calculate the final price based on the current state and checked promo
     const basePrice = Number(experience.price.toString());
     const subtotal = basePrice * slotData.quantity;
-    const taxes = 59; // Assuming fixed taxes
+    const taxes = 59;
 
     let discountAmount = 0;
 
-    // Apply discount if a valid promo code was successfully checked
     if (checkedPromoData?.isValid && checkedPromoData?.data) {
       const promo = checkedPromoData.data;
-      const discountValue = Number(promo.discountValue); // Note: still safer to calculate on backend!
+      const discountValue = Number(promo.discountValue);
 
       if (promo.discountType === "PERCENTAGE") {
-        // Calculate percentage discount
         discountAmount = subtotal * (discountValue / 100);
       } else if (promo.discountType === "FINAL_AMOUNT") {
-        // Apply fixed discount
         discountAmount = discountValue;
       }
     }
 
-    // Calculate the expected final price to send to the backend
     const totalBeforeTaxes = subtotal - discountAmount;
     const finalPrice = totalBeforeTaxes + taxes;
 
-    // 2. Construct the final payload
     const payload: BookingPayload = {
       slotId: slotData.slotId,
       quantity: slotData.quantity,
-      userName: values.fullname, // Mapped from form field
-      userEmail: values.email, // Mapped from form field
-      userPhone: undefined, // Add this if you include a phone field in your form
+      userName: values.fullname,
+      userEmail: values.email,
+      userPhone: undefined,
       promoCode: values.promocode?.toUpperCase() || undefined,
-      calculatedFinalPrice: finalPrice, // Backend MUST re-verify this!
+      calculatedFinalPrice: finalPrice,
     };
 
     console.log("Submitting Payload:", payload);
 
     try {
-      // 3. Call the API
       const response = await fetch("/api/bookings", {
         method: "POST",
         headers: {
@@ -291,27 +255,20 @@ const CheckoutPage = () => {
         body: JSON.stringify(payload),
       });
 
-      // 4. Handle the API Response
       const result = await response.json();
 
       if (response.ok) {
-        // Booking succeeded (Status 201)
         console.log("Booking Success:", result);
-        //  Redirect to confirmation page with booking ID
         router.push(
           `/experience/${experienceId}/booking?bookingId=${result.bookingId}`
         );
       } else {
-        // Booking failed (e.g., 400 validation, 500 server error)
-
         console.error("Booking API Error:", result.error);
         toast.error(`Booking Failed: ${result.error || "Please try again."}`);
-        // alert(`Booking Failed: ${result.error || "Please try again."}`);
       }
     } catch (error) {
       console.error("Network error during submission:", error);
       toast.error("An unexpected network error occurred.");
-      // alert("An unexpected network error occurred.");
     }
   };
 
@@ -323,27 +280,27 @@ const CheckoutPage = () => {
     );
   }
   return (
-    <div className="h-fit min-h-screen w-full px-[124px] py-6 flex flex-col   bg-[#F9F9F9] ">
+    <div className="h-fit min-h-screen w-full px-4 sm:px-8 lg:px-16 xl:px-[124px] py-6 flex flex-col bg-[#F9F9F9] ">
       <button
         onClick={() => router.back()}
         className="flex gap-2 h-5 items-center mb-6 cursor-pointer"
       >
         <ArrowLeft size={20} />
-        <span className="font-medium text-[14px] leading-[18px]  ">
+        <span className="font-medium text-[14px] leading-[18px]">
           Checkout
         </span>
       </button>
-      <div className="flex gap-10">
+      <div className="flex flex-col lg:flex-row gap-10">
         <Form {...form}>
-          <form onSubmit={form.handleSubmit(formSubmit)}>
-            <div className="flex  gap-10 w-full h-full">
-              <div className="w-[739px] h-fit rounded-[12px] py-5 px-6 gap-4 bg-[#EFEFEF] ">
-                <div className="w-full flex gap-6">
+          <form onSubmit={form.handleSubmit(formSubmit)} className="w-full">
+            <div className="flex flex-col lg:flex-row gap-10 w-full h-full">
+              <div className="w-full h-fit rounded-[12px] py-5 px-6 gap-4 bg-[#EFEFEF] ">
+                <div className="w-full flex flex-col sm:flex-row gap-6">
                   <FormField
                     control={form.control}
                     name="fullname"
                     render={({ field }) => (
-                      <FormItem>
+                      <FormItem className="w-full sm:w-1/2">
                         <FormLabel className="font-normal text-[14px] leading-[18px] text-[#5B5B5B]">
                           Full Name
                         </FormLabel>
@@ -352,7 +309,7 @@ const CheckoutPage = () => {
                             {...field}
                             value={field.value}
                             placeholder="Your name"
-                            className="rounded-[6px] w-[333px] h-[42px] py-3 px-4 gap-2.5 bg-[#DDDDDD]"
+                            className="rounded-[6px] w-full h-[42px] py-3 px-4 gap-2.5 bg-[#DDDDDD]"
                           />
                         </FormControl>
                         <FormMessage />
@@ -363,7 +320,7 @@ const CheckoutPage = () => {
                     control={form.control}
                     name="email"
                     render={({ field }) => (
-                      <FormItem>
+                      <FormItem className="w-full sm:w-1/2">
                         <FormLabel className="font-normal text-[14px] leading-[18px] text-[#5B5B5B]">
                           Email
                         </FormLabel>
@@ -372,7 +329,7 @@ const CheckoutPage = () => {
                             {...field}
                             value={field.value}
                             placeholder="Your email"
-                            className="rounded-[6px] w-[333px] h-[42px] py-3 px-4 gap-2.5 bg-[#DDDDDD]"
+                            className="rounded-[6px] w-full h-[42px] py-3 px-4 gap-2.5 bg-[#DDDDDD]"
                           />
                         </FormControl>
                         <FormMessage />
@@ -385,14 +342,14 @@ const CheckoutPage = () => {
                     control={form.control}
                     name="promocode"
                     render={({ field }) => (
-                      <FormItem>
+                      <FormItem className="w-full">
                         <FormControl>
                           <Input
                             {...field}
                             onChange={(e) => handlePromoChange(e)}
                             value={field.value}
                             placeholder="Promo code"
-                            className="rounded-[6px] h-[42px] w-[604px] py-3 px-4 gap-2.5 bg-[#DDDDDD]"
+                            className="rounded-[6px] h-[42px] w-full py-3 px-4 gap-2.5 bg-[#DDDDDD]"
                           />
                         </FormControl>
                         <FormMessage />
@@ -400,12 +357,11 @@ const CheckoutPage = () => {
                     )}
                   />
                   <button
-                    type="submit"
+                    type="button"
                     disabled={applyDisabled}
                     onClick={handlePromocodeSubmit}
                     className={cn(
-                      "rounded-[8px] cursor-pointer h-[42px] w-full flex items-center justify-center py-3 px-4 bg-[#161616] text-[14px] leading-[18px] font-medium text-[#F9F9F9]",
-
+                      "rounded-[8px] cursor-pointer h-[42px] min-w-[100px] flex-shrink-0 flex items-center justify-center py-3 px-4 bg-[#161616] text-[14px] leading-[18px] font-medium text-[#F9F9F9] transition-colors",
                       applyDisabled &&
                         "bg-[#161616]/20 cursor-not-allowed pointer-events-none",
                       isPromoLoading &&
@@ -424,7 +380,7 @@ const CheckoutPage = () => {
                       <FormItem className="flex gap-2 items-center">
                         <FormControl>
                           <Checkbox
-                            className="size-[12px]  border-[#5B5B5B] rounded-none"
+                            className="size-[12px] border-[#5B5B5B] rounded-none"
                             checked={field.value}
                             onCheckedChange={field.onChange}
                           />
@@ -438,7 +394,8 @@ const CheckoutPage = () => {
                   />
                 </div>
               </div>
-              <div className="w-[387px] flex flex-col p-6 rounded-[12px] gap-6 bg-[#EFEFEF]">
+
+              <div className="w-full lg:w-[387px] flex flex-col p-6 rounded-[12px] gap-6 bg-[#EFEFEF]">
                 <div className="flex flex-col gap-4">
                   <span className="w-full flex justify-between">
                     <h1 className="text-[#656565] text-[16px] leading-5 font-normal">
@@ -507,9 +464,9 @@ const CheckoutPage = () => {
                     type="submit"
                     disabled={isFormSubmitDisabled}
                     className={cn(
-                      "w-full  py-3 px-5 rounded-[8px] text-[16px] leading-5 font-medium text-[#161616] bg-[#FFD643]  ",
+                      "w-full py-3 px-5 rounded-[8px] text-[16px] leading-5 font-medium text-[#161616] bg-[#FFD643] cursor-pointer",
                       isFormSubmitDisabled &&
-                        "text-[#7F7F7F] bg-[#D7D7D7]  cursor-not-allowed pointer-events-none"
+                        "text-[#7F7F7F] bg-[#D7D7D7] cursor-not-allowed pointer-events-none"
                     )}
                   >
                     Pay and Confirm

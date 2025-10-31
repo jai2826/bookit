@@ -14,7 +14,6 @@ const ExperiencePage = () => {
   const router = useRouter();
   const params = useParams();
   const searchParams = new URLSearchParams();
-  // Ensure quantity is a string
   const experienceId = Array.isArray(params.experienceId)
     ? params.experienceId[0]
     : params.experienceId || "";
@@ -26,7 +25,6 @@ const ExperiencePage = () => {
   >(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  // console.log(experienceId);
   const allDates = experience?.slots.map((slot) => {
     const newDateObject = new Date(slot.dateTime);
     return newDateObject.toISOString().split("T")[0];
@@ -50,14 +48,7 @@ const ExperiencePage = () => {
   const [slotQuantity, setSlotQuantity] = useState<number>(1);
   const [checkoutUrl, setCheckoutUrl] = useState<string>("");
   const [isCheckOutDisabled, setIsCheckOutDisabled] = useState<boolean>(true);
-  // 1. Get the Time Slots for the currently selected date
-  //   const selectedTimeSlots = selectedDate
-  //     ? slots.find((slotObj) => slotObj.hasOwnProperty(selectedDate))?.[
-  //         selectedDate
-  //       ] || []
-  //     : [];
 
-  // Handler for Date Radio Group change
   const handleDateChange = (date: string) => {
     setSelectedDate(date);
     let tempTimeSlots = dateSlots.find((slot) => slot.date === date);
@@ -77,13 +68,11 @@ const ExperiencePage = () => {
         const response = await fetch(API_URL);
 
         if (!response.ok) {
-          // Handle HTTP errors (404, 500, etc.)
           const errorData = await response.json();
           throw new Error(errorData.error || "Failed to fetch experience");
         }
 
         const data = await response.json();
-        // console.log(data);
         setExperience(data);
       } catch (e: any) {
         setError(e.message);
@@ -102,11 +91,10 @@ const ExperiencePage = () => {
       })?.id || ""
     );
     searchParams.set("slotQuantity", slotQuantity.toString());
-    // console.log(slotQuantity)
     setCheckoutUrl(
       `/experience/${experienceId}/checkout?${searchParams.toString()}`
     );
-  }, [slotQuantity, selectedTime]);
+  }, [slotQuantity, selectedTime, timeSlots, experienceId, searchParams]);
   if (isLoading) {
     return (
       <div className="w-full h-full flex items-center justify-center py-20 bg-[#F9F9F9]">
@@ -115,20 +103,34 @@ const ExperiencePage = () => {
     );
   }
 
+  if (error) {
+    return (
+      <div className="w-full h-full flex flex-col items-center justify-center py-20 bg-[#F9F9F9]">
+        <p className="text-lg text-red-600">Error: {error}</p>
+        <button
+          onClick={() => router.push("/home")}
+          className="mt-4 text-blue-500 hover:underline cursor-pointer"
+        >
+          Go back to Home
+        </button>
+      </div>
+    );
+  }
+
   return (
-    <div className="h-fit min-h-screen w-full px-[124px] py-6 flex flex-col   bg-[#F9F9F9] ">
+    <div className="h-fit min-h-screen w-full px-4 sm:px-8 lg:px-16 xl:px-[124px] py-6 flex flex-col bg-[#F9F9F9]">
       <button
         onClick={() => router.push("/home")}
         className="flex gap-2 h-5 items-center mb-6 cursor-pointer"
       >
         <ArrowLeft size={20} />
-        <span className="font-medium text-[14px] leading-[18px]  ">
+        <span className="font-medium text-[14px] leading-[18px]">
           Details
         </span>
       </button>
-      <div className="flex gap-10">
-        <div className="h-full flex flex-col gap-8 w-[765px] ">
-          <div className="relative h-[381px] rounded-[12px] overflow-hidden ">
+      <div className="flex flex-col lg:flex-row gap-10">
+        <div className="h-full flex flex-col gap-8 w-full lg:w-[765px]">
+          <div className="relative h-[381px] rounded-[12px] overflow-hidden w-full">
             <Image
               src={experience?.imageUrl || "/placeholder-image.png"}
               alt={experience?.name || "Experience Image"}
@@ -138,7 +140,7 @@ const ExperiencePage = () => {
           </div>
           <div className="flex flex-col gap-8">
             <div className="flex flex-col gap-y-4">
-              <h1 className="text-[24px] leading-8 font-medium ">
+              <h1 className="text-[24px] leading-8 font-medium">
                 {experience?.name}
               </h1>
               <p className="text-[16px] leading-6 font-normal text-[#6C6C6C]">
@@ -147,7 +149,7 @@ const ExperiencePage = () => {
             </div>
             <div className="flex flex-col gap-y-4">
               <div className="flex flex-col gap-3">
-                <h2 className="text-[18px] leading-[22px] font-medium ">
+                <h2 className="text-[18px] leading-[22px] font-medium">
                   Choose date
                 </h2>
                 <div>
@@ -156,32 +158,30 @@ const ExperiencePage = () => {
                     onValueChange={handleDateChange}
                     className="flex gap-4 overflow-x-auto"
                   >
-                    {dateSlots.map((slot, index) => {
+                    {dateSlots.map((slot) => {
                       const date = slot.date;
                       const displayDate = formatDisplayDate(date);
-
-                      // Determine the styling based on the selection state
                       const isSelected = selectedDate === date;
 
                       return (
                         <div
                           key={slot.date}
-                          className="min-w-[69px] "
-                          // Use the label's click to trigger the RadioGroupItem
+                          className="min-w-[69px]"
                           onClick={() => handleDateChange(date)}
                         >
                           <RadioGroupItem
                             value={date}
                             id={slot.date}
-                            className="absolute h-0 w-0 opacity-0" //To hide the circle
+                            className="absolute h-0 w-0 opacity-0"
                           />
                           <Label
                             htmlFor={slot.date}
-                            className={`w-full flex items-center justify-center  text-[14px] leading-[18px] font-normal rounded-[4px] py-2 px-3 gap-2.5 border-[0.6px] border-solid border-[#BDBDBD] cursor-pointer transition-all  ${
+                            className={cn(
+                              "w-full flex items-center justify-center text-[14px] leading-[18px] font-normal rounded-[4px] py-2 px-3 gap-2.5 border-[0.6px] border-solid border-[#BDBDBD] cursor-pointer transition-all",
                               isSelected
-                                ? "bg-[#FFD643] text-primary  shadow-md border-[#FFD643]"
-                                : "bg-background text-[#838383] "
-                            }`}
+                                ? "bg-[#FFD643] text-primary shadow-md border-[#FFD643]"
+                                : "bg-background text-[#838383]"
+                            )}
                           >
                             {displayDate}
                           </Label>
@@ -192,7 +192,7 @@ const ExperiencePage = () => {
                 </div>
               </div>
               <div className="flex flex-col gap-3">
-                <h2 className="text-[18px] leading-[22px] font-medium ">
+                <h2 className="text-[18px] leading-[22px] font-medium">
                   Choose time
                 </h2>
                 <div>
@@ -201,12 +201,10 @@ const ExperiencePage = () => {
                     onValueChange={handleTimeChange}
                     className="flex gap-4 overflow-x-auto"
                   >
-                    {timeSlots.map((slot, index) => {
+                    {timeSlots.map((slot) => {
                       const newDateObject = new Date(slot.dateTime);
                       const time = newDateObject.toISOString();
                       const displayTime = formatDisplayTime(time);
-
-                      // Determine the styling based on the selection state
                       const slotsLeft = slot.capacity - slot.bookedCount;
                       const isSelected = selectedTime === time && slotsLeft > 0;
                       return (
@@ -214,7 +212,7 @@ const ExperiencePage = () => {
                           <RadioGroupItem
                             value={time}
                             id={slot.id}
-                            className="absolute h-0 w-0 opacity-0" // The trick to hide the circle
+                            className="absolute h-0 w-0 opacity-0"
                             disabled={slotsLeft === 0}
                           />
                           <Label
@@ -223,14 +221,14 @@ const ExperiencePage = () => {
                               slotsLeft > 0 && handleTimeChange(time)
                             }
                             aria-disabled={slotsLeft === 0}
-                            className={`w-full flex items-center justify-center  text-[14px] leading-[18px] font-normal rounded-[4px] py-2 px-3 gap-1.5 border-[0.6px] border-solid border-[#BDBDBD] cursor-pointer transition-all  ${
+                            className={cn(
+                              "w-full flex items-center justify-center text-[14px] leading-[18px] font-normal rounded-[4px] py-2 px-3 gap-1.5 border-[0.6px] border-solid border-[#BDBDBD] cursor-pointer transition-all",
                               isSelected
-                                ? "bg-[#FFD643] text-primary  border-[#FFD643]"
-                                : "bg-background text-[#838383] "
-                            },${
+                                ? "bg-[#FFD643] text-primary border-[#FFD643]"
+                                : "bg-background text-[#838383]",
                               slotsLeft === 0 &&
-                              "opacity-50 bg-[#CCCCCC] !cursor-not-allowed !pointer-events-none"
-                            }`}
+                                "opacity-50 bg-[#CCCCCC] !cursor-not-allowed !pointer-events-none"
+                            )}
                           >
                             <span className="text-center text-nowrap">
                               {displayTime}
@@ -252,11 +250,11 @@ const ExperiencePage = () => {
                   </span>
                 </div>
               </div>
-              <div className="flex flex-col gap-3 ">
+              <div className="flex flex-col gap-3">
                 <h1 className="font-medium text-[18px] leading-[22px]">
                   About
                 </h1>
-                <span className="rounded-[4px] py-2 px-3 gap-2.5 bg-[#EEEEEE] ">
+                <span className="rounded-[4px] py-2 px-3 gap-2.5 bg-[#EEEEEE]">
                   <p className="text-[12px] leading-4 font-normal text-[#838383]">
                     {experience?.about}
                   </p>
@@ -265,7 +263,7 @@ const ExperiencePage = () => {
             </div>
           </div>
         </div>
-        <div className="w-[387px] flex flex-col  h-fit p-6 rounded-[12px] gap-6 bg-[#EFEFEF]">
+        <div className="w-full lg:w-[387px] flex flex-col h-fit p-6 rounded-[12px] gap-6 bg-[#EFEFEF]">
           <div className="flex flex-col gap-4">
             <span className="w-full flex justify-between">
               <h1 className="text-[#656565] text-[16px] leading-5 font-normal">
@@ -278,6 +276,7 @@ const ExperiencePage = () => {
                 Quantity
               </h1>
               <span className="flex items-center gap-[9px]">
+                {/* CURSOR POINTER ADDED HERE */}
                 <button
                   onClick={() =>
                     setSlotQuantity((prev) => {
@@ -285,18 +284,19 @@ const ExperiencePage = () => {
                       return prev - 1;
                     })
                   }
-                  className="w-4 h-4 flex justify-center border-[0.4px]  items-center"
+                  className="w-4 h-4 flex justify-center border-[0.4px] items-center cursor-pointer"
                 >
-                  <Minus />{" "}
+                  <Minus size={10} />
                 </button>
                 <p className="text-[12px] leading-[14px] font-normal">
                   {slotQuantity}
                 </p>
+                {/* CURSOR POINTER ADDED HERE */}
                 <button
                   onClick={() => setSlotQuantity((prev) => prev + 1)}
-                  className="w-4 h-4 flex justify-center border-[0.4px] items-center "
+                  className="w-4 h-4 flex justify-center border-[0.4px] items-center cursor-pointer"
                 >
-                  <Plus />
+                  <Plus size={10} />
                 </button>
               </span>
             </span>
@@ -328,16 +328,17 @@ const ExperiencePage = () => {
             </span>
           </div>
           <div>
+            {/* The primary button already has dynamic styling but should have a default cursor pointer */}
             <button
               onClick={() => {
                 router.push(checkoutUrl);
               }}
               disabled={isCheckOutDisabled}
               className={cn(
-                "w-full  py-3 px-5  rounded-[8px] text-[16px] leading-5 font-medium text-[#7F7F7F]  ",
+                "w-full py-3 px-5 rounded-[8px] text-[16px] leading-5 font-medium text-[#7F7F7F] cursor-pointer",
                 isCheckOutDisabled
                   ? "bg-[#D7D7D7] cursor-not-allowed"
-                  : "bg-[#FFD643] text-primary  hover:shadow-md transition-shadow duration-200"
+                  : "bg-[#FFD643] text-primary hover:shadow-md transition-shadow duration-200"
               )}
             >
               Continue
