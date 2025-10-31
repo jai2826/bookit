@@ -129,7 +129,7 @@ const ExperiencePage = () => {
               src={experience?.imageUrl || "/placeholder-image.png"}
               alt={experience?.name || "Experience Image"}
               fill
-              className="object-center"
+              className="object-cover"
             />
           </div>
           <div className="flex flex-col gap-8">
