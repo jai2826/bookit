@@ -4,6 +4,7 @@ import Navbar from "@/components/navbar";
 
 import { Inter } from "next/font/google";
 import { Toaster } from "@/components/ui/sonner";
+import { Suspense } from "react";
 
 const interSans = Inter({
   variable: "--font-inter-sans", // Changed variable name for clarity
@@ -26,9 +27,11 @@ export default function RootLayout({
         className={`${interSans.variable}  antialiased mx-auto max-w-[1440px]  bg-muted flex flex-col min-h-screen`}
       >
         {" "}
-        <Toaster theme="light" richColors />
-        <Navbar />
-        {children}
+        <Suspense fallback={<div>Loading...</div>}>
+          <Toaster theme="light" richColors />
+          <Navbar />
+          {children}
+        </Suspense>
       </body>
     </html>
   );

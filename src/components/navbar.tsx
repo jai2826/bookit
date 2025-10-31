@@ -1,5 +1,6 @@
 import SearchBar from "@/components/searchbar";
 import Image from "next/image";
+import { Suspense } from "react";
 
 export default function Navbar() {
   return (
@@ -7,7 +8,9 @@ export default function Navbar() {
       <div className=" w-[100px] h-[55px] text-center">
         <Image src="/logo.png" alt="Logo" width={100} height={55} />
       </div>
-      <SearchBar />
+      <Suspense fallback={<div>Loading Navigation...</div>}>
+        <SearchBar />
+      </Suspense>
     </nav>
   );
 }
