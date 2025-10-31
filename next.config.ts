@@ -1,6 +1,8 @@
 import type { NextConfig } from "next";
 
 const nextConfig = {
+  output: "standalone",
+
   images: {
     // List the domains you are pulling images from
     remotePatterns: [
