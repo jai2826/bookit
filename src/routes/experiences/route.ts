@@ -7,6 +7,18 @@ const app = new Hono();
 // Route 1: Fetch ALL Experiences
 // ==========================================================
 app.get("/", async (c) => {
+  const search = c.req.query("search");
+
+  const whereClause = search
+    ? {
+        OR: [
+          { name: { contains: search, mode: "insensitive" as const } },
+          { description: { contains: search, mode: "insensitive" as const } },
+          // Add more fields to search here!
+        ],
+      }
+    : {}; // Empty object means fetch all
+
   try {
     // Select all experiences and include their slots (schedules)
     const experiences = await prisma.experience.findMany({
@@ -17,8 +29,8 @@ app.get("/", async (c) => {
         price: true,
         duration: true,
         imageUrl: true,
-        location:true,
-        description:true,
+        location: true,
+        description: true,
         slots: {
           select: {
             id: true,
@@ -37,6 +49,7 @@ app.get("/", async (c) => {
       orderBy: {
         name: "asc",
       },
+      where: whereClause,
     });
 
     return c.json({ count: experiences.length, data: experiences }, 200);
@@ -52,7 +65,6 @@ app.get("/", async (c) => {
 app.get(":id", async (c) => {
   // Get the 'id' parameter from the URL path
   const experienceId = c.req.param("id");
-  
 
   // Basic validation to ensure the ID is present
   if (!experienceId) {
