@@ -316,7 +316,11 @@ const CheckoutPage = () => {
   };
 
   if (isLoading) {
-    return <div>Loading experience...</div>;
+    return (
+      <div className="w-full h-full flex items-center justify-center py-20 bg-[#F9F9F9]">
+        <p className="text-lg text-gray-500">Loading...</p>
+      </div>
+    );
   }
   return (
     <div className="h-fit min-h-screen w-full px-[124px] py-6 flex flex-col   bg-[#F9F9F9] ">

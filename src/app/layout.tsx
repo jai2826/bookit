@@ -27,7 +27,13 @@ export default function RootLayout({
         className={`${interSans.variable}  antialiased mx-auto max-w-[1440px]  bg-muted flex flex-col min-h-screen`}
       >
         {" "}
-        <Suspense fallback={<div>Loading...</div>}>
+        <Suspense
+          fallback={
+            <div className="w-full h-full flex items-center justify-center py-20 bg-[#F9F9F9]">
+              <p className="text-lg text-gray-500">Loading...</p>
+            </div>
+          }
+        >
           <Toaster theme="light" richColors />
           <Navbar />
           {children}
