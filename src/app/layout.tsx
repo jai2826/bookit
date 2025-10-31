@@ -7,7 +7,7 @@ import { Toaster } from "@/components/ui/sonner";
 import { Suspense } from "react";
 
 const interSans = Inter({
-  variable: "--font-inter-sans", // Changed variable name for clarity
+  variable: "--font-inter-sans",
   subsets: ["latin"],
 });
 
@@ -24,12 +24,11 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body
-        className={`${interSans.variable}  antialiased mx-auto max-w-[1440px]  bg-muted flex flex-col min-h-screen`}
+        className={`${interSans.variable} antialiased mx-auto max-w-[1440px] bg-muted flex flex-col min-h-screen overflow-x-hidden`}
       >
-        {" "}
         <Suspense
           fallback={
-            <div className="w-full h-full flex items-center justify-center py-20 bg-[#F9F9F9]">
+            <div className="w-full flex items-center justify-center py-20 bg-[#F9F9F9]">
               <p className="text-lg text-gray-500">Loading...</p>
             </div>
           }
