@@ -1,0 +1,96 @@
+// You can use 'postgresql', 'mysql', or 'mongodb' as per the assignment options.
+// I'll use PostgreSQL as a common example.
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+// --- CORE MODELS ---
+
+// Model for the main travel experiences (GET /experiences).
+model Experience {
+  id          String   @id @default(cuid())
+  name        String   @unique
+  about       String
+  description String
+  price       Decimal  @default(0.00) @db.Decimal(10, 2)
+  duration    String? // e.g., "3 hours", "Full Day"
+  imageUrl    String? // For the royalty-free images
+  location    String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  slots Slot[] // Relation to available slots
+}
+
+// Model for available dates and time slots (GET /experiences/:id).
+model Slot {
+  id           String     @id @default(cuid())
+  experienceId String
+  experience   Experience @relation(fields: [experienceId], references: [id])
+  dateTime     DateTime
+  capacity     Int        @default(1)
+  bookedCount  Int        @default(0)
+  isSoldOut    Boolean    @default(false) // For clear feedback
+
+  bookings Booking[]
+
+  @@unique([experienceId, dateTime])
+  @@index([experienceId])
+  @@index([dateTime])
+}
+
+// Model for user bookings (POST /bookings).
+model Booking {
+  id        String  @id @default(cuid())
+  slotId    String
+  slot      Slot    @relation(fields: [slotId], references: [id])
+  quantity  Int     @default(1)
+  // Minimal form validation fields
+  userName  String
+  userEmail String
+  userPhone String?
+
+  // Price & Promo
+  promoCodeId   String?
+  promoCode     PromoCode? @relation(fields: [promoCodeId], references: [id])
+  originalPrice Decimal    @db.Decimal(10, 2)
+  finalPrice    Decimal    @db.Decimal(10, 2)
+
+  // Status & Date
+  status      BookingStatus @default(PENDING) // Confirmation or failure message
+  bookingDate DateTime      @default(now())
+
+  // Constraint to help prevent double-booking for the *same* booking record (but logic should be in the service layer)
+  @@index([slotId, userEmail])
+}
+
+// Model for Promo Codes (POST /promo/validate).
+model PromoCode {
+  id            String       @id @default(cuid())
+  code          String       @unique // e.g., SAVE10, FLAT100
+  discountType  DiscountType
+  discountValue Decimal      @db.Decimal(10, 2)
+  isActive      Boolean      @default(true)
+  validUntil    DateTime?
+
+  bookings Booking[]
+}
+
+// --- ENUMS ---
+
+enum BookingStatus {
+  PENDING
+  CONFIRMED
+  FAILED
+  CANCELLED
+}
+
+enum DiscountType {
+  PERCENTAGE // e.g., 10% off
+  FLAT_AMOUNT // e.g., $100 off
+}
