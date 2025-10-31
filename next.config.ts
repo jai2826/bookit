@@ -23,10 +23,22 @@ const nextConfig = {
 
   images: {
     // List the domains you are pulling images from
+
+    domains: ["lh3.googleusercontent.com"],
     remotePatterns: [
       {
         protocol: "https",
         hostname: "dummyimage.com",
+      },
+      {
+        protocol: "https",
+        hostname: "afx4mpgyo9rrmtck.public.blob.vercel-storage.com",
+      },
+      {
+        protocol: "https",
+        hostname: "lh3.googleusercontent.com",
+        port: "",
+        pathname: "/**",
       },
     ],
   },

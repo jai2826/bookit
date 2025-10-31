@@ -14,7 +14,7 @@ const Card = (experience: Experience) => {
           src={experience.imageUrl || "/placeholder-image.png"}
           alt={experience.name}
           fill
-          className="object-center"
+          className="object-cover"
         />
       </div>
       <div className="py-3 px-4 bg-[#F0F0F0] flex flex-col gap-y-5">
