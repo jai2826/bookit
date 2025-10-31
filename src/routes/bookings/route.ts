@@ -1,6 +1,6 @@
-import prisma from "@/lib/db";
+import { prisma } from "@/lib/db";
 import { Hono } from "hono";
-import { string, z } from "zod";
+import { z } from "zod";
 
 // Zod schema matching the required input from the checkout form.
 // We only accept fields needed for the booking logic.

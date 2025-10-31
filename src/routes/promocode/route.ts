@@ -1,4 +1,4 @@
-import prisma from "@/lib/db";
+import {prisma} from "@/lib/db";
 import { Hono } from "hono";
 
 // Assuming this is part of your main Hono app or a dedicated promoCode app

@@ -1,4 +1,4 @@
-import prisma from "@/lib/db";
+import {prisma} from "@/lib/db";
 import { Hono } from "hono";
 
 // Create a Hono instance for the Slot APIs
